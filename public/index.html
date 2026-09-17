@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Assignment Tracker</title>
+
+    <script>
+      (() => {
+        const saved =
+          localStorage.getItem("assignment-tracker-theme") || "system";
+
+        const theme =
+          saved === "system"
+            ? matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : saved;
+
+        document.documentElement.dataset.theme = theme;
+
+        document.documentElement.dataset.themePreference = saved;
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+
+  <body>
+    <header class="topbar">
+      <a href="#" id="home-link" class="brand-link"> Assignment Tracker </a>
+
+      <div class="header-actions">
+        <div class="manage-menu-container">
+          <button id="manage-button" class="manage-button" type="button">
+            Manage ▾
+          </button>
+
+          <div id="manage-menu" class="manage-menu hidden">
+            <button id="manage-add-course" type="button">Add Course</button>
+
+            <button id="manage-sessions" type="button">Manage Sessions</button>
+
+            <button id="manage-courses" type="button">Manage Courses</button>
+
+            <button id="manage-archived" type="button">Archived Courses</button>
+
+            <div class="manage-menu-divider"></div>
+
+            <div class="theme-menu">
+              <div class="theme-menu-label">Theme</div>
+
+              <div class="theme-options">
+                <button type="button" class="theme-option" data-theme="system">
+                  System
+                </button>
+
+                <button type="button" class="theme-option" data-theme="light">
+                  Light
+                </button>
+
+                <button type="button" class="theme-option" data-theme="dark">
+                  Dark
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <select id="course-selector">
+          <option value="">Home</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <section id="home-view" class="hidden">
+        <div class="home-heading">
+          <div>
+            <h1>Home</h1>
+            <div class="home-subtitle">
+              Assignments requiring your attention
+            </div>
+          </div>
+        </div>
+
+        <div id="home-overdue-section" class="home-section hidden">
+          <div class="home-section-heading overdue-heading">
+            <div>
+              <h2>Overdue</h2>
+              <span id="home-overdue-count"></span>
+            </div>
+          </div>
+
+          <div id="home-overdue"></div>
+        </div>
+
+        <div id="home-this-week-section" class="home-section">
+          <div class="home-section-heading">
+            <div>
+              <h2>This Week</h2>
+              <span id="home-this-week-label"></span>
+            </div>
+          </div>
+
+          <div id="home-this-week"></div>
+        </div>
+
+        <div id="home-next-week-section" class="home-section">
+          <div class="home-section-heading">
+            <div>
+              <h2>Next Week</h2>
+              <span id="home-next-week-label"></span>
+            </div>
+          </div>
+
+          <div id="home-next-week"></div>
+        </div>
+      </section>
+
+      <section id="no-course" class="empty-state">
+        <h1>Assignment Tracker</h1>
+
+        <p>Select a course above or create your first session and course.</p>
+
+        <button id="setup-button">Initial Setup</button>
+      </section>
+
+      <section id="course-view" class="hidden">
+        <div class="course-heading">
+          <div>
+            <h1 id="course-name"></h1>
+            <div id="course-code"></div>
+          </div>
+
+          <div class="course-actions">
+            <div class="remaining">
+              Remaining Assignments:
+              <strong id="remaining-count">0</strong>
+            </div>
+
+            <div id="normal-assignment-actions" class="assignment-actions">
+              <button id="select-assignments-button" class="secondary-button">
+                Select
+              </button>
+
+              <button id="add-assignment-button">+ Add Assignments</button>
+            </div>
+
+            <div id="selection-actions" class="assignment-actions hidden">
+              <button
+                id="select-all-assignments-button"
+                class="secondary-button"
+              >
+                Select All
+              </button>
+
+              <button id="cancel-selection-button" class="secondary-button">
+                Cancel
+              </button>
+
+              <button
+                id="delete-selected-button"
+                class="danger-button"
+                disabled
+              >
+                Delete Selected (0)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-layout">
+          <div class="assignments-panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th>Section</th>
+                  <th>Type</th>
+                  <th>Possible</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+
+              <tbody id="assignment-table"></tbody>
+
+              <tfoot>
+                <tr>
+                  <td colspan="4">
+                    <strong id="grade-display"> Grade: N/A </strong>
+                  </td>
+
+                  <td id="total-possible">0</td>
+
+                  <td id="total-grade">0</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="summary-panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Count</th>
+                  <th>Possible</th>
+                  <th>Actual</th>
+                  <th>%</th>
+                  <th>Weight</th>
+                </tr>
+              </thead>
+
+              <tbody id="summary-table"></tbody>
+
+              <tfoot>
+                <tr>
+                  <td></td>
+                  <td id="summary-count">0</td>
+                  <td id="summary-possible">0</td>
+                  <td id="summary-actual">0</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Initial Setup -->
+
+    <dialog id="setup-dialog">
+      <form id="setup-form">
+        <h2>Create Session</h2>
+
+        <label>
+          Session
+          <input id="session-code" placeholder="202609" required />
+        </label>
+
+        <label>
+          First Day of Unit 1
+          <input id="session-start" type="date" required />
+        </label>
+
+        <h2>Create First Course</h2>
+
+        <label>
+          Course Code
+          <input id="new-course-code" placeholder="IT301" required />
+        </label>
+
+        <label>
+          Course Name
+          <input
+            id="new-course-name"
+            placeholder="Project Management I"
+            required
+          />
+        </label>
+
+        <div class="dialog-buttons">
+          <button type="button" id="cancel-setup" class="secondary-button">
+            Cancel
+          </button>
+
+          <button type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Add Assignments -->
+
+    <dialog id="assignment-dialog">
+      <div class="dialog-header">
+        <div>
+          <h2>Add Assignments</h2>
+
+          <p>
+            Add one assignment or create the same assignment across multiple
+            units.
+          </p>
+        </div>
+
+        <button type="button" id="close-assignment-dialog" class="icon-button">
+          ×
+        </button>
+      </div>
+
+      <div class="mode-switch">
+        <button
+          type="button"
+          id="single-mode-button"
+          class="mode-button active"
+        >
+          Single
+        </button>
+
+        <button type="button" id="bulk-mode-button" class="mode-button">
+          Multiple Units
+        </button>
+      </div>
+
+      <!-- Single Assignment -->
+
+      <form id="single-assignment-form">
+        <label>
+          Section
+
+          <select id="assignment-unit" required></select>
+        </label>
+
+        <label>
+          Type
+
+          <select id="assignment-type" required></select>
+        </label>
+
+        <label>
+          Name
+          <span class="optional">(optional)</span>
+
+          <input id="assignment-name" placeholder="Optional description" />
+        </label>
+
+        <label>
+          Possible
+
+          <input
+            id="assignment-possible"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+          />
+        </label>
+
+        <div class="due-preview">
+          Due:
+          <strong id="due-preview"> Select a unit and type </strong>
+        </div>
+
+        <div class="dialog-buttons">
+          <button type="button" class="secondary-button cancel-assignment">
+            Cancel
+          </button>
+
+          <button type="submit">Add Assignment</button>
+        </div>
+      </form>
+
+      <!-- Bulk Assignments -->
+
+      <form id="bulk-assignment-form" class="hidden">
+        <label>
+          Type
+
+          <select id="bulk-assignment-type" required></select>
+        </label>
+
+        <div class="bulk-points-mode">
+          <label class="radio-option">
+            <input type="radio" name="bulk-points-mode" value="same" checked />
+            Same points for every unit
+          </label>
+
+          <label class="radio-option">
+            <input type="radio" name="bulk-points-mode" value="individual" />
+            Different points by unit
+          </label>
+        </div>
+
+        <div id="shared-points-container">
+          <label>
+            Possible Points Per Assignment
+
+            <input
+              id="bulk-assignment-possible"
+              type="number"
+              min="0"
+              step="0.01"
+            />
+          </label>
+        </div>
+
+        <div class="units-heading">
+          <strong>Units</strong>
+
+          <div>
+            <button type="button" id="select-all-units" class="text-button">
+              Select All
+            </button>
+
+            <button type="button" id="clear-all-units" class="text-button">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div id="bulk-unit-list" class="bulk-unit-list"></div>
+
+        <div class="dialog-buttons">
+          <button type="button" class="secondary-button cancel-assignment">
+            Cancel
+          </button>
+
+          <button type="submit">Add Assignments</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="edit-assignment-dialog">
+      <form id="edit-assignment-form">
+        <div class="dialog-header">
+          <div>
+            <h2>Edit Assignment</h2>
+            <p>Changes here affect only this assignment.</p>
+          </div>
+
+          <button type="button" id="close-edit-dialog" class="icon-button">
+            ×
+          </button>
+        </div>
+
+        <input type="hidden" id="edit-assignment-id" />
+
+        <label>
+          Section
+
+          <select id="edit-assignment-unit" required></select>
+        </label>
+
+        <label>
+          Type
+
+          <select id="edit-assignment-type" required></select>
+        </label>
+
+        <label>
+          Name
+          <span class="optional">(optional)</span>
+
+          <input id="edit-assignment-name" />
+        </label>
+
+        <label>
+          Due
+
+          <input id="edit-assignment-due" type="date" required />
+        </label>
+
+        <label>
+          Possible
+
+          <input
+            id="edit-assignment-possible"
+            type="number"
+            min="0"
+            step="0.01"
+          />
+        </label>
+
+        <label>
+          Grade
+
+          <input id="edit-assignment-grade" type="number" min="0" step="0.01" />
+        </label>
+
+        <label class="checkbox-option">
+          <input id="edit-assignment-completed" type="checkbox" />
+          Completed
+        </label>
+
+        <div class="edit-dialog-buttons">
+          <button
+            type="button"
+            id="delete-assignment-button"
+            class="danger-button"
+          >
+            Delete
+          </button>
+
+          <div>
+            <button
+              type="button"
+              id="cancel-edit-assignment"
+              class="secondary-button"
+            >
+              Cancel
+            </button>
+
+            <button type="submit">Save</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Add Course -->
+
+    <dialog id="add-course-dialog">
+      <form id="add-course-form">
+        <div class="dialog-header">
+          <div>
+            <h2>Add Course</h2>
+
+            <p>Add a course to an existing session.</p>
+          </div>
+
+          <button
+            type="button"
+            id="close-add-course-dialog"
+            class="icon-button"
+          >
+            ×
+          </button>
+        </div>
+
+        <label>
+          Session
+
+          <select id="add-course-session" required></select>
+        </label>
+
+        <label>
+          Course Code
+
+          <input
+            id="add-course-code"
+            type="text"
+            autocomplete="off"
+            placeholder="MM250"
+            required
+          />
+        </label>
+
+        <label>
+          Course Name
+
+          <input
+            id="add-course-name"
+            type="text"
+            autocomplete="off"
+            placeholder="Discrete Mathematics"
+            required
+          />
+        </label>
+
+        <div class="dialog-buttons">
+          <button type="button" id="cancel-add-course" class="secondary-button">
+            Cancel
+          </button>
+
+          <button type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Course Management -->
+
+    <dialog id="course-management-dialog">
+      <div class="dialog-header">
+        <div>
+          <h2>Manage Courses</h2>
+
+          <p>Edit, archive, or restore courses.</p>
+        </div>
+
+        <button type="button" id="close-course-management" class="icon-button">
+          ×
+        </button>
+      </div>
+
+      <div class="mode-switch">
+        <button
+          type="button"
+          id="active-courses-tab"
+          class="mode-button active"
+        >
+          Active
+        </button>
+
+        <button type="button" id="archived-courses-tab" class="mode-button">
+          Archived
+        </button>
+      </div>
+
+      <div id="course-management-list"></div>
+
+      <div class="dialog-buttons">
+        <button
+          type="button"
+          id="close-course-management-bottom"
+          class="secondary-button"
+        >
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <!-- Edit Course -->
+    <dialog id="edit-course-dialog">
+      <form id="edit-course-form">
+        <div class="dialog-header">
+          <div>
+            <h2>Edit Course</h2>
+
+            <p>Edit the course or move it to another session.</p>
+          </div>
+
+          <button type="button" id="close-edit-course" class="icon-button">
+            ×
+          </button>
+        </div>
+
+        <input type="hidden" id="edit-course-id" />
+
+        <label>
+          Course Code
+
+          <input id="edit-course-code" required />
+        </label>
+
+        <label>
+          Course Name
+
+          <input id="edit-course-name" required />
+        </label>
+
+        <label>
+          Session
+
+          <select id="edit-course-session-select" required></select>
+        </label>
+
+        <label id="recalculate-dates-option" class="checkbox-label hidden">
+          <input type="checkbox" id="edit-course-recalculate-dates" />
+
+          Recalculate existing assignment due dates using the new session
+        </label>
+
+        <div class="dialog-buttons danger-split">
+          <button type="button" id="delete-course" class="danger-button">
+            Delete Course
+          </button>
+
+          <div>
+            <button
+              type="button"
+              id="cancel-edit-course"
+              class="secondary-button"
+            >
+              Cancel
+            </button>
+
+            <button type="submit">Save</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Session Management -->
+
+    <dialog id="session-management-dialog">
+      <div class="dialog-header">
+        <div>
+          <h2>Manage Sessions</h2>
+          <p>View or edit existing course sessions.</p>
+        </div>
+
+        <button type="button" id="close-session-management" class="icon-button">
+          ×
+        </button>
+      </div>
+
+      <div id="session-management-list"></div>
+
+      <div class="dialog-buttons session-management-footer">
+        <button type="button" id="add-session-button">+ Add Session</button>
+
+        <button
+          type="button"
+          id="close-session-management-bottom"
+          class="secondary-button"
+        >
+          Close
+        </button>
+      </div>
+    </dialog>
+
+    <!-- Add Session -->
+
+    <dialog id="add-session-dialog">
+      <form id="add-session-form">
+        <div class="dialog-header">
+          <div>
+            <h2>Add Session</h2>
+            <p>Create a new 10-unit course session.</p>
+          </div>
+
+          <button type="button" id="close-add-session" class="icon-button">
+            ×
+          </button>
+        </div>
+
+        <label>
+          Session Code
+
+          <input id="add-session-code" placeholder="202611" required />
+        </label>
+
+        <label>
+          First Day of Unit 1
+
+          <input id="add-session-start" type="date" required />
+        </label>
+
+        <div>
+          <strong>Unit Schedule</strong>
+
+          <div id="add-session-schedule" class="session-schedule"></div>
+        </div>
+
+        <div class="dialog-buttons">
+          <button
+            type="button"
+            id="cancel-add-session"
+            class="secondary-button"
+          >
+            Cancel
+          </button>
+
+          <button type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Edit Session -->
+
+    <dialog id="edit-session-dialog">
+      <form id="edit-session-form">
+        <div class="dialog-header">
+          <div>
+            <h2>Edit Session</h2>
+
+            <p>Existing assignment due dates will not be changed.</p>
+          </div>
+
+          <button type="button" id="close-edit-session" class="icon-button">
+            ×
+          </button>
+        </div>
+
+        <input type="hidden" id="edit-session-id" />
+
+        <label>
+          Session Code
+
+          <input id="edit-session-code" required />
+        </label>
+
+        <label>
+          First Day of Unit 1
+
+          <input id="edit-session-start" type="date" required />
+        </label>
+
+        <div>
+          <strong>Unit Schedule</strong>
+
+          <div id="edit-session-schedule" class="session-schedule"></div>
+        </div>
+
+        <div class="dialog-buttons">
+          <button
+            type="button"
+            id="cancel-edit-session"
+            class="secondary-button"
+          >
+            Cancel
+          </button>
+
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>

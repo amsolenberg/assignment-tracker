@@ -1,0 +1,13 @@
+{
+  "name": "assignment-tracker",
+  "version": "0.1.0",
+  "description": "Self-hosted college assignment and grade tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "express": "^5.1.0"
+  }
+}
